@@ -1,0 +1,14 @@
+metric,value
+read_dicom_time,0.20923689999999984
+filter_sort_time,0.006355400000000122
+hu_conversion_time,0.27379399999999987
+spacing_calc_time,9.850000000000136e-05
+memory_usage,575225856
+total_load_time,0.5074483000000001
+memory_after_load,356413440
+segmentation_time,0.007182300000000197
+memory_after_seg,357793792
+mip_time,0.02961960000000019
+memory_after_mip,424677376
+gif_time,46.6092932
+memory_after_gif,431063040
