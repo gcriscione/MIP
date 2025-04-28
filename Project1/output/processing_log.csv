@@ -1,0 +1,19 @@
+2025-04-29 00:20:22,104,INFO,dicom_utils,Using highdicom for segmentation validation.
+2025-04-29 00:20:22,595,WARNING,dicom_utils,No AcquisitionNumber found in any slice.
+2025-04-29 00:20:22,936,INFO,dicom_utils,Loaded 207 CT slices; spacing=(0.78125, 0.78125, 2.5)
+2025-04-29 00:20:23,221,INFO,dicom_utils,highdicom validated 1 segments.
+2025-04-29 00:20:23,230,WARNING,dicom_utils,Found segments {1}, missing: {2, 3, 4}
+2025-04-29 00:20:23,285,INFO,dicom_utils,Segment 1 voxel count: 20347
+ing (mm): (0.78125, 0.78125, 2.5)
+2025-04-29 00:20:23,053,INFO,__main__,Starting segmentation load...
+2025-04-29 00:20:23,221,INFO,dicom_utils,highdicom validated 1 segments.
+2025-04-29 00:20:23,230,WARNING,dicom_utils,Found segments {1}, missing: {2, 3, 4}
+2025-04-29 00:20:23,285,INFO,dicom_utils,Segment 1 voxel count: 20347
+2025-04-29 00:20:23,285,INFO,__main__,Segmentation shape: (207, 512, 512)
+2025-04-29 00:20:23,886,INFO,__main__,Saved slice overlay: output\slice_overlay_23.png
+2025-04-29 00:20:23,992,INFO,__main__,Computing MIPs...
+2025-04-29 00:20:24,418,INFO,__main__,Saved MIPs figure: output\mips_combined.png
+2025-04-29 00:20:24,506,INFO,matplotlib.animation,Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2025-04-29 00:21:18,005,INFO,__main__,GIF creation time: 0.04s, memory after GIF: 473579520 bytes
+2025-04-29 00:21:21,251,INFO,__main__,Exporting performance metrics to CSV...
+2025-04-29 00:21:21,251,INFO,__main__,Metrics CSV saved: output\performance_metrics.csv

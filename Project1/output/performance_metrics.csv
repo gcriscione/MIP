@@ -1,0 +1,14 @@
+metric,value,unit
+read_time,0.30912510000000015,
+sort_time,0.00894809999999957,
+hu_time,0.3382945000000004,
+spacing_time,0.00010849999999962279,
+memory_usage,593502208,
+total_ct_load_s,0.6819511,s
+memory_after_ct_load_bytes,374575104,bytes
+segmentation_load_s,0.23264609999999974,s
+memory_after_seg_bytes,451358720,bytes
+mip_compute_s,0.039974500000000024,s
+memory_after_mip_bytes,463568896,bytes
+gif_creation_s,53.4995269,s
+memory_after_gif_bytes,473579520,bytes
