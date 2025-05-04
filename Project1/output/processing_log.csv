@@ -1,0 +1,13 @@
+2025-05-04 16:08:17,850,INFO,dicom_utils,Using highdicom for segmentation validation.
+2025-05-04 16:08:18,050,INFO,__main__,Loading CT volume...
+2025-05-04 16:08:18,642,INFO,__main__,CT loaded: shape=(207, 512, 512), spacing=(0.78125, 0.78125, 2.5)
+2025-05-04 16:08:18,709,INFO,__main__,Loading liver and tumor segmentations...
+2025-05-04 16:08:18,782,INFO,__main__,Liver mask voxel count: 1394774
+2025-05-04 16:08:18,820,INFO,__main__,Tumor mask voxel count: 20347
+2025-05-04 16:08:19,365,INFO,__main__,Combined volume shape: (207, 512, 512), labels: [0 1 2]
+2025-05-04 16:08:25,770,INFO,__main__,Saved high-res overlay image to output\overlay_slice_23.png
+2025-05-04 16:08:25,858,INFO,__main__,Computing MIPs...
+2025-05-04 16:08:25,941,INFO,__main__,MIPs computed in 0.08s
+2025-05-04 16:08:28,555,INFO,__main__,Saved enhanced MIP fill+edges figure to output\mips_fill_edges.png
+2025-05-04 16:08:28,761,INFO,matplotlib.animation,Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2025-05-04 16:10:08,314,INFO,matplotlib.animation,Animation.save using <class 'matplotlib.animation.HTMLWriter'>
