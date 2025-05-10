@@ -27,96 +27,117 @@ console_h.setFormatter(logging.Formatter('[%(levelname)s] %(message)s'))
 logger.addHandler(console_h)
 
 
-# --- Try to import highdicom for segmentation validation ---
-try:
-    from highdicom.seg import Segmentation
-    HIGHDICOM_AVAILABLE = True
-    logger.info("Using highdicom for segmentation validation.")
-except ImportError:
-    HIGHDICOM_AVAILABLE = False
-    logger.warning("highdicom not available: skipping advanced validation.")
+def apply_modality_lut(pixel_array: np.ndarray, ds: pydicom.Dataset) -> np.ndarray:
+    """
+    Applica RescaleSlope e RescaleIntercept per ottenere valori in Hounsfield Units.
+    """
+    slope = float(getattr(ds, 'RescaleSlope', 1.0))
+    intercept = float(getattr(ds, 'RescaleIntercept', 0.0))
+    return pixel_array.astype(np.float32) * slope + intercept
 
 
 def load_ct_slices(ct_dir: str) -> Tuple[np.ndarray, dict, dict]:
     """
-    Load CT volume from a directory, sort slices, convert to HU, compute spacing,
-    and return timing/memory info.
+    Carica tutte le slice DICOM in una cartella, verifica AcquisitionNumber e spacing,
+    filtra slice atipiche, ordina in dual-mode, converte in HU, e ritorna volume + metadata.
     """
-    # Collect all DICOM files
-    paths = [os.path.join(ct_dir, f) for f in os.listdir(ct_dir) if f.endswith('.dcm')]
+    # 1) Trova tutti i file .dcm
+    paths = [os.path.join(ct_dir, f) for f in os.listdir(ct_dir) if f.lower().endswith('.dcm')]
     if not paths:
-        raise FileNotFoundError(f"No DICOMs in {ct_dir}")
+        raise FileNotFoundError(f"No DICOM files found in {ct_dir}")
 
-    # Read all slices
+    # 2) Leggi tutti i dataset
     datasets = [pydicom.dcmread(p) for p in paths]
 
-    # Sort by InstanceNumber or fallback to Z-position
-    try:
-        datasets.sort(key=lambda ds: int(ds.InstanceNumber))
-    except:
-        datasets.sort(key=lambda ds: float(ds.ImagePositionPatient[2]))
+    # 3) Filtra slice con shape diversa dalla prima
+    ref_shape = datasets[0].pixel_array.shape
+    good, bad = [], 0
+    for ds in datasets:
+        if ds.pixel_array.shape == ref_shape:
+            good.append(ds)
+        else:
+            bad += 1
+    if bad:
+        logger.warning(f"Scartate {bad} slice con shape diversa da {ref_shape}")
+    datasets = good
+    if not datasets:
+        raise RuntimeError("Nessuna slice valida dopo il filtraggio per shape")
 
-    # Extract Z positions
-    positions = [float(ds.ImagePositionPatient[2]) for ds in datasets]
+    # 4) Controlla AcquisitionNumber uniforme
+    acq_nums = [getattr(ds, 'AcquisitionNumber', None) for ds in datasets]
+    if len(set(acq_nums)) != 1:
+        raise ValueError(f"Inconsistent AcquisitionNumber found: {set(acq_nums)}")
+    acq = acq_nums[0]
+    logger.info(f"Single acquisition #{acq} confirmed for all slices")
 
-    # Stack pixel arrays and convert to Hounsfield Units
-    volume = np.stack([ds.pixel_array for ds in datasets], axis=0).astype(np.float32)
-    slope = float(getattr(datasets[0], 'RescaleSlope', 1.0))
-    intercept = float(getattr(datasets[0], 'RescaleIntercept', 0.0))
-    volume = volume * slope + intercept
+    # 5) Controlla SpacingBetweenSlices o calcola da Z-positions
+    sbss = [getattr(ds, 'SpacingBetweenSlices', None) for ds in datasets]
+    if all(sbss):
+        if len(set(sbss)) != 1:
+            raise ValueError(f"Inconsistent SpacingBetweenSlices: {set(sbss)}")
+        slice_sp = float(sbss[0])
+        logger.info(f"Using DICOM SpacingBetweenSlices = {slice_sp}")
+    else:
+        positions = [float(ds.ImagePositionPatient[2]) for ds in datasets]
+        diffs = np.diff(sorted(positions))
+        if not np.allclose(diffs, diffs[0], atol=1e-3):
+            raise ValueError(f"Non-uniform slice spacing detected: {diffs[:5]}…")
+        slice_sp = float(diffs[0])
+        logger.info(f"Computed uniform slice spacing = {slice_sp} from ImagePositionPatient")
 
-    # Compute voxel spacing
+    # 6) Dual-mode ordering: con e senza ImagePositionPatient
+    with_pos    = [ds for ds in datasets if hasattr(ds, 'ImagePositionPatient')]
+    without_pos = [ds for ds in datasets if not hasattr(ds, 'ImagePositionPatient')]
+    with_pos.sort(key=lambda ds: float(ds.ImagePositionPatient[2]))
+    without_pos.sort(key=lambda ds: int(getattr(ds, 'InstanceNumber', 0)))
+    datasets = with_pos + without_pos
+
+    # 7) Costruisci volume e converti in HU
+    volume = np.stack([apply_modality_lut(ds.pixel_array, ds) for ds in datasets], axis=0)
+
+    # 8) Metadata e timing minimale
     row_sp, col_sp = map(float, datasets[0].PixelSpacing)
-    try:
-        slice_sp = abs(positions[1] - positions[0])
-    except:
-        slice_sp = float(getattr(datasets[0], 'SliceThickness', 1.0))
-
     metadata = {
-        'positions': positions,
-        'spacing': (row_sp, col_sp, slice_sp)
+        'acquisition': acq,
+        'positions': [float(ds.ImagePositionPatient[2]) for ds in datasets if hasattr(ds, 'ImagePositionPatient')],
+        'spacing': (row_sp, col_sp, slice_sp),
+        'slice_spacing': slice_sp
     }
     timings = {
-        'read_time': None,
-        'sort_time': None,
-        'hu_time': None,
-        'spacing_time': None,
         'memory_usage': psutil.Process().memory_info().rss
     }
 
+    logger.info(f"CT volume loaded: shape={volume.shape}, spacing={metadata['spacing']}")
     return volume, metadata, timings
 
 
-def load_segmentation(seg_path: str, ct_positions: List[float], label_name: str) -> np.ndarray:
+def load_segmentation(seg_path: str, ct_positions: List[float], label_name: str=None) -> np.ndarray:
     """
-    Load a single ROI mask (liver or tumor) and map its frames onto the CT volume positions.
-    If all frames share the same Z, distribute them evenly across the CT slices.
-    Returns a binary 3D mask (1=ROI, 0=background).
+    Carica una segmentazione DICOM SEG e restituisce un volume etichettato
+    (0=background, altrimenti numero di segmento).
     """
     ds = pydicom.dcmread(seg_path)
     n_frames = int(ds.NumberOfFrames)
-    rows, cols = ds.Rows, ds.Columns
-
-    # Read pixel data and reshape
-    pixel_data = ds.pixel_array.reshape(n_frames, rows, cols)
+    rows, cols = int(ds.Rows), int(ds.Columns)
     positions = np.array(ct_positions)
+    # Leggi SegmentSequence (se presente)
+    seg_map = {}
+    if 'SegmentSequence' in ds:
+        for item in ds.SegmentSequence:
+            seg_map[int(item.SegmentNumber)] = getattr(item, 'SegmentLabel', '')
+    default_num = 1 if label_name == 'liver' else 2
 
-    # Extract Z for each frame
-    zs = [float(f.PlanePositionSequence[0].ImagePositionPatient[2])
-          for f in ds.PerFrameFunctionalGroupsSequence]
-    unique_z = sorted(set(zs))
-
-    # Decide mapping indices
-    if len(unique_z) == 1:
-        # all frames share the same Z → spread uniformly
-        indices = np.linspace(0, len(positions)-1, num=n_frames, dtype=int)
-    else:
-        # normal nearest-Z mapping
-        indices = [int(np.argmin(np.abs(positions - z))) for z in zs]
-
-    # Build mask volume
+    # Prepara array di output
     mask_vol = np.zeros((len(positions), rows, cols), dtype=np.uint8)
-    for frame_idx, dslice_idx in enumerate(indices):
-        mask_vol[dslice_idx] |= pixel_data[frame_idx].astype(bool)
+    # Per-frame: estrai Z e numero di segmento
+    for f, frame in enumerate(ds.PerFrameFunctionalGroupsSequence):
+        z = float(frame.PlanePositionSequence[0].ImagePositionPatient[2])
+        segnum = default_num
+        if hasattr(frame, 'SegmentIdentificationSequence'):
+            segnum = int(frame.SegmentIdentificationSequence[0].ReferencedSegmentNumber)
+        slice_idx = int(np.argmin(np.abs(positions - z)))
+        mask = ds.pixel_array.reshape(n_frames, rows, cols)[f] > 0
+        mask_vol[slice_idx][mask] = segnum
 
-    return mask_vol
+    logger.info(f"Loaded SEG: segments={list(seg_map.keys()) or [default_num]}")
+    return mask_volImagePositionPatient
