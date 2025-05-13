@@ -120,24 +120,28 @@ def load_segmentation(seg_path: str, ct_positions: List[float], label_name: str=
     n_frames = int(ds.NumberOfFrames)
     rows, cols = int(ds.Rows), int(ds.Columns)
     positions = np.array(ct_positions)
-    # Leggi SegmentSequence (se presente)
+
+    # Mappa dei segmenti
     seg_map = {}
     if 'SegmentSequence' in ds:
         for item in ds.SegmentSequence:
             seg_map[int(item.SegmentNumber)] = getattr(item, 'SegmentLabel', '')
+
     default_num = 1 if label_name == 'liver' else 2
 
     # Prepara array di output
     mask_vol = np.zeros((len(positions), rows, cols), dtype=np.uint8)
+
     # Per-frame: estrai Z e numero di segmento
+    pixel_data = ds.pixel_array.reshape(n_frames, rows, cols)
     for f, frame in enumerate(ds.PerFrameFunctionalGroupsSequence):
         z = float(frame.PlanePositionSequence[0].ImagePositionPatient[2])
         segnum = default_num
         if hasattr(frame, 'SegmentIdentificationSequence'):
             segnum = int(frame.SegmentIdentificationSequence[0].ReferencedSegmentNumber)
         slice_idx = int(np.argmin(np.abs(positions - z)))
-        mask = ds.pixel_array.reshape(n_frames, rows, cols)[f] > 0
+        mask = pixel_data[f] > 0
         mask_vol[slice_idx][mask] = segnum
 
     logger.info(f"Loaded SEG: segments={list(seg_map.keys()) or [default_num]}")
-    return mask_volImagePositionPatient
+    return mask_vol
