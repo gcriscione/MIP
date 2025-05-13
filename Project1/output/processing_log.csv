@@ -15,3 +15,21 @@
 2025-05-13 22:37:35,997,INFO,__main__,MIPs computed in 0.08s
 2025-05-13 22:37:38,425,INFO,__main__,Saved rotated enhanced MIP figure to output\mips_fill_edges_rotated.png
 2025-05-13 22:37:39,465,INFO,matplotlib.animation,Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2025-05-13 22:39:25,186,INFO,matplotlib.animation,Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-05-13 22:45:15,556,INFO,__main__,Loading CT volume...
+2025-05-13 22:45:15,891,INFO,__main__,Single acquisition #None confirmed for all slices
+2025-05-13 22:45:15,898,INFO,__main__,Using DICOM SpacingBetweenSlices = 2.5
+2025-05-13 22:45:16,153,INFO,__main__,CT volume loaded: shape=(207, 512, 512), spacing=(0.78125, 0.78125, 2.5)
+2025-05-13 22:45:16,174,INFO,__main__,CT loaded: shape=(207, 512, 512), spacing=(0.78125, 0.78125, 2.5)
+2025-05-13 22:45:16,248,INFO,__main__,Loading liver and tumor segmentations...
+2025-05-13 22:45:16,278,INFO,__main__,Loaded SEG: segments=[1]
+2025-05-13 22:45:16,283,INFO,__main__,Loaded SEG: segments=[1]
+2025-05-13 22:45:16,320,INFO,__main__,Liver mask voxel count: 1394774
+2025-05-13 22:45:16,352,INFO,__main__,Tumor mask voxel count: 20347
+2025-05-13 22:45:16,948,INFO,__main__,Combined volume shape: (207, 512, 512), labels: [0 1 2]
+2025-05-13 22:45:24,353,INFO,__main__,Saved high-res overlay image to output\overlay_slice_176.png
+2025-05-13 22:45:24,438,INFO,__main__,Computing rotated MIPs...
+2025-05-13 22:45:24,511,INFO,__main__,MIPs computed in 0.07s
+2025-05-13 22:45:26,929,INFO,__main__,Saved rotated enhanced MIP figure to output\mips_fill_edges_rotated.png
+2025-05-13 22:45:27,978,INFO,matplotlib.animation,Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2025-05-13 22:48:39,697,INFO,matplotlib.animation,Animation.save using <class 'matplotlib.animation.HTMLWriter'>

@@ -9,9 +9,7 @@ import psutil
 from scipy.ndimage import rotate
 
 # --- Logger setup: console + CSV file ---
-LOG_DIR = os.path.join(os.getcwd(), 'output')
-os.makedirs(LOG_DIR, exist_ok=True)
-LOG_CSV = os.path.join(LOG_DIR, 'processing_log.csv')
+
 
 logger = logging.getLogger('dicom_utils')
 logger.setLevel(logging.INFO)
