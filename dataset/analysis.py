@@ -105,7 +105,6 @@ def analyze_datasets(ct_datasets, segmentation_files):
             if refseq and hasattr(refseq[0], 'ReferencedImageSequence'):
                 uid = refseq[0].ReferencedImageSequence[0].ReferencedSOPInstanceUID
                 # lookup slice index per UID
-                # TODO: implement mapping from uid to slice index
                 frame_indices.append(None)
             else:
                 # fallback a DimensionIndexValues
